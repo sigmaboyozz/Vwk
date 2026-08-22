@@ -698,24 +698,7 @@ local Player = Players.LocalPlayer
 local WorldMobs = workspace:WaitForChild("World Mobs")
 local SkillRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("SkillRemote")
 
-local AuraKillEnemyBlastV2 = false
-local SelectedSpeed = 10
-
-local SpeedList = {
-    "10%",
-    "17.5%",
-    "27.5%",
-    "30%",
-    "15%",
-    "35%",
-    "40%",
-    "50%",
-    "55%"
-}
-
-local function GetDelay()
-    return 0.18 * (1 - (SelectedSpeed / 100))
-end
+local AuraEnabled = false
 
 local function GetRandomMob()
     local Character = Player.Character
@@ -730,7 +713,6 @@ local function GetRandomMob()
     for _, Mob in ipairs(WorldMobs:GetDescendants()) do
         if Mob:IsA("Model") then
             local Humanoid = Mob:FindFirstChildOfClass("Humanoid")
-
             local MobRoot = Mob:FindFirstChild("HumanoidRootPart")
                 or Mob.PrimaryPart
                 or Mob:FindFirstChildWhichIsA("BasePart")
@@ -752,26 +734,17 @@ local function GetRandomMob()
     return nil
 end
 
-Tab:AddDropdown({
-    Name = "Speed Aura Kill",
-    Default = "10%",
-    Options = SpeedList,
-    Callback = function(Value)
-        SelectedSpeed = tonumber(
-            string.gsub(Value, "%%", "")
-        ) or 10
-    end
-})
-
 Tab:AddToggle({
-    Name = "Aura kill enenry blast v2",
+    Name = "Aura Kill Energy Blast V2",
     Default = false,
     Callback = function(Value)
-        AuraKillEnemyBlastV2 = Value
+        AuraEnabled = Value
 
-        if Value then
+        if AuraEnabled then
             task.spawn(function()
-                while AuraKillEnemyBlastV2 do
+                while AuraEnabled do
+                    task.wait(0.16)
+
                     local Character = Player.Character
                     local Root = Character and Character:FindFirstChild("HumanoidRootPart")
 
@@ -801,7 +774,6 @@ Tab:AddToggle({
                                             workspace.CurrentCamera.CFrame.Position,
                                             TargetPosition
                                         ),
-
                                         ["SkillId"] = "101",
                                         ["Began"] = true,
                                         ["CFrame"] = SkillCFrame,
@@ -814,8 +786,6 @@ Tab:AddToggle({
                             end
                         end
                     end
-
-                    task.wait(GetDelay())
                 end
             end)
         end
