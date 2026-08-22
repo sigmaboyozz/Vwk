@@ -2,7 +2,7 @@ local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/sigm
 
 -- === TẠO CỬA SỔ ===
 local Window = OrionLib:MakeWindow({
-    Name = "Dragon Blox Full 2 V1.01",
+    Name = "Dragon Blox Full 2 V1.11",
     HidePremium = false,
     SaveConfig = true,
     ConfigFolder = "TeleportConfig"
