@@ -791,3 +791,78 @@ Tab:AddToggle({
         end
     end
 })
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Player = Players.LocalPlayer
+
+local WorldMobs = workspace:WaitForChild("World Mobs")
+
+local LockedOnChanged = ReplicatedStorage
+    :WaitForChild("Packages")
+    :WaitForChild("_Index")
+    :WaitForChild("sleitnick_knit@1.4.7")
+    :WaitForChild("knit")
+    :WaitForChild("Services")
+    :WaitForChild("SkillManager")
+    :WaitForChild("RE")
+    :WaitForChild("LockedOnChanged")
+
+local AutoLockRandomMob = false
+
+local function GetRandomMob()
+    local Character = Player.Character
+    local Root = Character and Character:FindFirstChild("HumanoidRootPart")
+
+    if not Root then
+        return nil
+    end
+
+    local ValidMobs = {}
+
+    for _, Mob in ipairs(WorldMobs:GetDescendants()) do
+        if Mob:IsA("Model") then
+            local Humanoid = Mob:FindFirstChildOfClass("Humanoid")
+
+            local MobRoot = Mob:FindFirstChild("HumanoidRootPart")
+                or Mob.PrimaryPart
+                or Mob:FindFirstChildWhichIsA("BasePart")
+
+            if Humanoid and MobRoot and Humanoid.Health > 0 then
+                local Distance = (Root.Position - MobRoot.Position).Magnitude
+
+                if Distance <= 400 then
+                    table.insert(ValidMobs, Mob)
+                end
+            end
+        end
+    end
+
+    if #ValidMobs > 0 then
+        return ValidMobs[math.random(1, #ValidMobs)]
+    end
+
+    return nil
+end
+
+Tab:AddToggle({
+    Name = "Auto Lock Random Mob",
+    Default = false,
+    Callback = function(Value)
+        AutoLockRandomMob = Value
+
+        if Value then
+            task.spawn(function()
+                while AutoLockRandomMob do
+                    local RandomMob = GetRandomMob()
+
+                    if RandomMob then
+                        LockedOnChanged:FireServer(RandomMob)
+                    end
+
+                    task.wait(0.4)
+                end
+            end)
+        end
+    end
+})
