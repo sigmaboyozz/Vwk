@@ -753,7 +753,7 @@ local function GetRandomMob()
 end
 
 Tab:AddDropdown({
-    Name = "Coooldown Aura Kill",
+    Name = "Speed Aura Kill",
     Default = "10%",
     Options = SpeedList,
     Callback = function(Value)
@@ -820,4 +820,4 @@ Tab:AddToggle({
             end)
         end
     end
-}).
+})
