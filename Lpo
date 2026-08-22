@@ -866,3 +866,197 @@ Tab:AddToggle({
         end
     end
 })
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local Player = Players.LocalPlayer
+
+local WorldMobs = workspace:WaitForChild("World Mobs")
+local EventMobs = WorldMobs:WaitForChild("Event Mobs")
+
+local SkillRemote = ReplicatedStorage
+    :WaitForChild("Remotes")
+    :WaitForChild("SkillRemote")
+
+local LockedOnChanged = ReplicatedStorage
+    :WaitForChild("Packages")
+    :WaitForChild("_Index")
+    :WaitForChild("sleitnick_knit@1.4.7")
+    :WaitForChild("knit")
+    :WaitForChild("Services")
+    :WaitForChild("SkillManager")
+    :WaitForChild("RE")
+    :WaitForChild("LockedOnChanged")
+
+local AutoZaja = false
+local CurrentTween = nil
+
+local function GetZaja()
+    local Zaja = EventMobs:FindFirstChild("Zaja")
+
+    if not Zaja then
+        return nil
+    end
+
+    local Humanoid = Zaja:FindFirstChildOfClass("Humanoid")
+
+    local Root = Zaja:FindFirstChild("HumanoidRootPart")
+        or Zaja.PrimaryPart
+        or Zaja:FindFirstChildWhichIsA("BasePart")
+
+    if not Humanoid or not Root or Humanoid.Health <= 0 then
+        return nil
+    end
+
+    return Zaja, Humanoid, Root
+end
+
+local function GetDistancePosition(PlayerRoot, ZajaRoot)
+    local Direction = PlayerRoot.Position - ZajaRoot.Position
+
+    if Direction.Magnitude <= 0.1 then
+        Direction = Vector3.new(0, 0, 1)
+    else
+        Direction = Direction.Unit
+    end
+
+    local Position = ZajaRoot.Position + (Direction * 500)
+
+    return CFrame.lookAt(
+        Position,
+        Vector3.new(
+            ZajaRoot.Position.X,
+            Position.Y,
+            ZajaRoot.Position.Z
+        )
+    )
+end
+
+local function TweenToZaja(PlayerRoot, ZajaRoot)
+    if CurrentTween then
+        CurrentTween:Cancel()
+        CurrentTween = nil
+    end
+
+    local TargetCFrame = GetDistancePosition(PlayerRoot, ZajaRoot)
+
+    local Distance = (PlayerRoot.Position - TargetCFrame.Position).Magnitude
+    local Time = Distance / 220
+
+    CurrentTween = TweenService:Create(
+        PlayerRoot,
+        TweenInfo.new(
+            math.max(Time, 0.05),
+            Enum.EasingStyle.Linear
+        ),
+        {
+            CFrame = TargetCFrame
+        }
+    )
+
+    CurrentTween:Play()
+end
+
+Tab1:AddToggle({
+    Name = "Auto kill Zaja",
+    Default = false,
+    Callback = function(Value)
+        AutoZaja = Value
+
+        if not Value then
+            if CurrentTween then
+                CurrentTween:Cancel()
+                CurrentTween = nil
+            end
+
+            return
+        end
+
+        -- Luồng di chuyển
+        task.spawn(function()
+            while AutoZaja do
+                local Character = Player.Character
+                local PlayerRoot = Character
+                    and Character:FindFirstChild("HumanoidRootPart")
+
+                local Zaja, Humanoid, ZajaRoot = GetZaja()
+
+                if PlayerRoot and Zaja and Humanoid.Health > 0 then
+                    local Distance = (
+                        PlayerRoot.Position - ZajaRoot.Position
+                    ).Magnitude
+
+                    -- Chỉ tween lại khi không giữ đúng khoảng cách
+                    if math.abs(Distance - 500) > 25 then
+                        TweenToZaja(PlayerRoot, ZajaRoot)
+                    end
+                else
+                    if CurrentTween then
+                        CurrentTween:Cancel()
+                        CurrentTween = nil
+                    end
+                end
+
+                task.wait(0.3)
+            end
+        end)
+
+        -- Luồng LockOn
+        task.spawn(function()
+            while AutoZaja do
+                local Zaja = GetZaja()
+
+                if Zaja then
+                    LockedOnChanged:FireServer(Zaja)
+                end
+
+                task.wait(0.2)
+            end
+        end)
+
+        -- Luồng bắn Skill 101
+        task.spawn(function()
+            while AutoZaja do
+                local Character = Player.Character
+                local PlayerRoot = Character
+                    and Character:FindFirstChild("HumanoidRootPart")
+
+                local Zaja, Humanoid, ZajaRoot = GetZaja()
+
+                if PlayerRoot and Zaja and ZajaRoot then
+                    local TargetPosition = ZajaRoot.Position
+
+                    local args = {
+                        [1] = {
+                            ["Camera"] = CFrame.lookAt(
+                                workspace.CurrentCamera.CFrame.Position,
+                                TargetPosition
+                            ),
+
+                            ["SkillId"] = "101",
+                            ["Began"] = true,
+
+                            ["CFrame"] = CFrame.lookAt(
+                                PlayerRoot.Position,
+                                Vector3.new(
+                                    TargetPosition.X,
+                                    PlayerRoot.Position.Y,
+                                    TargetPosition.Z
+                                )
+                            ),
+
+                            ["Typ\208\181"] = 1,
+
+                            ["Aim"] = TargetPosition
+                        }
+                    }
+
+                    SkillRemote:FireServer(unpack(args))
+                end
+
+                task.wait(0.18)
+            end
+        end)
+    end
+})
